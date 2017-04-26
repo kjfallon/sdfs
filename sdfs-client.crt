@@ -1,0 +1,72 @@
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 4 (0x4)
+    Signature Algorithm: sha256WithRSAEncryption
+        Issuer: C=US, ST=NY, L=Syracuse, O=Syracuse University, OU=CIS, CN=certificate-authority
+        Validity
+            Not Before: Apr 25 10:50:03 2017 GMT
+            Not After : Apr 25 10:50:03 2018 GMT
+        Subject: C=US, ST=NY, O=Syracuse University, OU=CIS, CN=sdfs-client
+        Subject Public Key Info:
+            Public Key Algorithm: rsaEncryption
+                Public-Key: (2048 bit)
+                Modulus:
+                    00:b8:62:c7:40:70:d9:ab:8a:f1:7e:a7:9e:ec:f2:
+                    5e:24:21:a6:89:be:45:db:14:fe:5c:f8:e8:8a:ef:
+                    10:63:d9:fb:06:17:37:36:27:de:50:29:80:ed:7e:
+                    e4:86:f4:a8:86:d5:3b:48:0b:c3:09:1f:a4:7c:04:
+                    cb:02:f3:a3:a3:6a:6a:0a:70:0c:7e:10:83:1c:91:
+                    50:a7:f6:18:6f:89:e5:86:71:a0:3b:48:a1:ca:bc:
+                    35:3e:2b:2a:7f:83:7f:d2:99:f2:1c:4d:20:bd:07:
+                    17:ed:44:0d:db:f8:c2:b2:2d:97:0b:4c:b5:9d:2e:
+                    a6:e1:b1:a0:6c:6d:30:27:07:de:42:9a:21:fb:48:
+                    20:00:a8:49:81:de:4e:bb:5d:ba:20:ce:58:39:44:
+                    a9:96:07:c5:0b:8e:1b:5a:53:aa:95:5e:d9:d4:6d:
+                    8e:c8:52:fe:6f:9d:96:13:18:ff:6b:50:a9:06:f8:
+                    90:0f:5f:e7:89:25:cf:3c:d6:fe:98:b5:ff:c5:41:
+                    d6:c2:bd:92:5f:b2:26:e1:7b:ed:58:5b:e9:dd:ad:
+                    d8:c5:38:d9:74:dd:2c:23:f8:12:6b:61:72:55:d5:
+                    4d:7a:46:2e:ef:57:72:53:4e:96:be:59:34:4b:2d:
+                    68:55:bf:a0:e6:66:4a:df:b7:c3:8b:93:f2:1b:e1:
+                    dd:a1
+                Exponent: 65537 (0x10001)
+        X509v3 extensions:
+            X509v3 Basic Constraints: 
+                CA:FALSE
+            Netscape Comment: 
+                OpenSSL Generated Certificate
+            X509v3 Subject Key Identifier: 
+                04:A1:45:1C:7E:14:10:F6:2F:84:6F:F2:75:3A:8C:E4:85:90:90:EB
+            X509v3 Authority Key Identifier: 
+                keyid:1B:F2:C8:1A:B3:C5:10:8B:EB:09:D8:F7:E8:F3:B6:60:D2:66:9C:0A
+
+    Signature Algorithm: sha256WithRSAEncryption
+         21:5f:ca:4f:14:6f:0f:b5:ba:77:83:72:8f:64:cb:8f:88:36:
+         2c:fc:64:73:f2:99:b0:f1:db:ba:40:ad:8a:7b:9d:3c:9f:48:
+         2a:fa:27:44:f7:64:4c:03:d2:84:a0:79:c7:a1:60:0a:32:64:
+         18:2e:04:24:31:57:d0:f4:3e:11:51:87:19:50:13:e4:00:9c:
+         0b:6e:67:d1:86:34:f0:59:41:7d:c9:49:6e:e7:28:d1:00:a9:
+         6a:8d:3f:02:b3:f5:36:b8:6a:fb:76:48:d2:e2:9e:1a:20:31:
+         88:ff:38:2a:0c:9c:06:f3:d0:68:4d:c5:dc:b8:3c:fe:62:a5:
+         30:de
+-----BEGIN CERTIFICATE-----
+MIIDSjCCArOgAwIBAgIBBDANBgkqhkiG9w0BAQsFADB5MQswCQYDVQQGEwJVUzEL
+MAkGA1UECAwCTlkxETAPBgNVBAcMCFN5cmFjdXNlMRwwGgYDVQQKDBNTeXJhY3Vz
+ZSBVbml2ZXJzaXR5MQwwCgYDVQQLDANDSVMxHjAcBgNVBAMMFWNlcnRpZmljYXRl
+LWF1dGhvcml0eTAeFw0xNzA0MjUxMDUwMDNaFw0xODA0MjUxMDUwMDNaMFwxCzAJ
+BgNVBAYTAlVTMQswCQYDVQQIDAJOWTEcMBoGA1UECgwTU3lyYWN1c2UgVW5pdmVy
+c2l0eTEMMAoGA1UECwwDQ0lTMRQwEgYDVQQDDAtzZGZzLWNsaWVudDCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBALhix0Bw2auK8X6nnuzyXiQhpom+RdsU
+/lz46IrvEGPZ+wYXNzYn3lApgO1+5Ib0qIbVO0gLwwkfpHwEywLzo6NqagpwDH4Q
+gxyRUKf2GG+J5YZxoDtIocq8NT4rKn+Df9KZ8hxNIL0HF+1EDdv4wrItlwtMtZ0u
+puGxoGxtMCcH3kKaIftIIACoSYHeTrtduiDOWDlEqZYHxQuOG1pTqpVe2dRtjshS
+/m+dlhMY/2tQqQb4kA9f54klzzzW/pi1/8VB1sK9kl+yJuF77Vhb6d2t2MU42XTd
+LCP4EmthclXVTXpGLu9XclNOlr5ZNEstaFW/oOZmSt+3w4uT8hvh3aECAwEAAaN7
+MHkwCQYDVR0TBAIwADAsBglghkgBhvhCAQ0EHxYdT3BlblNTTCBHZW5lcmF0ZWQg
+Q2VydGlmaWNhdGUwHQYDVR0OBBYEFAShRRx+FBD2L4Rv8nU6jOSFkJDrMB8GA1Ud
+IwQYMBaAFBvyyBqzxRCL6wnY9+jztmDSZpwKMA0GCSqGSIb3DQEBCwUAA4GBACFf
+yk8Ubw+1uneDco9ky4+INiz8ZHPymbDx27pArYp7nTyfSCr6J0T3ZEwD0oSgeceh
+YAoyZBguBCQxV9D0PhFRhxlQE+QAnAtuZ9GGNPBZQX3JSW7nKNEAqWqNPwKz9Ta4
+avt2SNLinhogMYj/OCoMnAbz0GhNxdy4PP5ipTDe
+-----END CERTIFICATE-----
