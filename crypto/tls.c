@@ -54,7 +54,7 @@ int initialize_tls( char *ca_cert, char *cert, char *priv_key, gboolean is_serve
         perror("TLS: Private key and cert mismatch");
     }
     else {
-        printf("Loaded and validated server x509 certificate and key.\n");
+        printf("Loaded and validated this host's x509 certificate and key.\n");
     }
     return 0;
 
