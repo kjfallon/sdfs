@@ -1,29 +1,7 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <openssl/evp.h>
-#include <openssl/ssl.h>
-
-/* glib provides additional data structures and logging framework */
-#include <glib.h>
-/* libconfuse provides support for using a configuration file */
-#include <confuse.h>
-#include <openssl/rand.h>
-
 #include "sdfs.h"
-#include "network/tcp.h"
-#include "crypto/encrypt.h"
-#include "crypto/mac.h"
-#include "crypto/tls.h"
-#include "output/console.h"
 
 #define LISTEN_QUEUE_MAX 20
-
 // use control char as delimiter in composite strings
 #define STRING_DELIM "\x7f"
 #define CHAR_DELIM   '\x7f'

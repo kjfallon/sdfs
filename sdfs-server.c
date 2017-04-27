@@ -1,33 +1,8 @@
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <errno.h>
-#include <openssl/evp.h>
-#include <openssl/rand.h>
-#include <openssl/ssl.h>
-
-/* glib provides additional data structures
- *   and logging framework https://developer.gnome.org/glib/ */
-#include <glib.h>
-
-/* libconfuse provides support for using a configuration file
- * https://github.com/martinh/libconfuse */
-#include <confuse.h>
-
 #include "sdfs.h"
-#include "network/tcp.h"
-#include "crypto/encrypt.h"
-#include "crypto/mac.h"
-#include "crypto/tls.h"
-#include "output/console.h"
 
 // use control char as delimiter in composite strings
 #define STRING_DELIM "\x7f"
-
 
 int debug, option;
 gboolean has_valid_certs = TRUE;

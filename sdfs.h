@@ -1,6 +1,35 @@
 #ifndef SDFS_SDFS_H
 #define SDFS_SDFS_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <errno.h>
+
+/* OpenSSL provides cryptography libraries
+ * https://www.openssl.org/ */
+#include <openssl/evp.h>
+#include <openssl/rand.h>
+#include <openssl/ssl.h>
+
+/* GLib provides additional data structures and logging framework
+ * https://developer.gnome.org/glib/ */
+#include <glib.h>
+
+/* libconfuse provides support for using a configuration file
+ * https://github.com/martinh/libconfuse */
+#include <confuse.h>
+
+/* Project specific header files */
+#include "network/tcp.h"
+#include "crypto/encrypt.h"
+#include "crypto/mac.h"
+#include "crypto/tls.h"
+#include "output/console.h"
+
 enum message_type {
 
     HELLO           = 0x01,
