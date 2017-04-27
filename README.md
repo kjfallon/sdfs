@@ -45,7 +45,7 @@ Parsing parameters specified on command line
 Command line parameters are optional and will override configuration file parameters listed above.
 No command line parameters were specified.
 
-Loaded and validated server x509 certificate and key.
+Loaded and validated this host's x509 certificate and key.
 DNS lookup for sdfs-server is 127.0.1.1
 CLIENT: connecting to server 127.0.1.1
 CLIENT: Ready to use tcp transport to server 127.0.1.1
@@ -80,7 +80,7 @@ $
    configuration file parameters listed above.
    --No command line parameters were specified
 
-   Loaded and validated server x509 certificate and key.
+   Loaded and validated this host's x509 certificate and key.
    Listening for client TLS connections on 0.0.0.0:44444
    Client connected from 127.0.0.1
    TLS: channel established using TLSv1/SSLv3 AES256-SHA
