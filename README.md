@@ -1,7 +1,8 @@
 # Project Requirements
 A concrete and specific execution of the protocol as below: Initially, a server stores a single file.  Two clients userA and userB can interact with the server in the following sequence:
 
-```user_login("userA", "pwd123");
+```
+user_login("userA", "pwd123");
 user_login("userB", "pwd456");
 file_permission_set("userA");
 file_access("userA"); //success
