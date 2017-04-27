@@ -28,8 +28,8 @@
 #define CHAR_DELIM   '\x7f'
 
 int debug, option;
-int has_valid_certs = 1;
-int client_authenticated, exit_requested = 0;
+gboolean has_valid_certs = TRUE;
+gboolean client_authenticated, exit_requested = FALSE;
 uint16_t port = 55555;
 char *progname = "";
 char *if_name = "";
@@ -52,7 +52,7 @@ SSL         *ssl;
  **************************************************************************/
 void client_exit(int exit_code) {
 
-    exit_requested =1;
+    exit_requested =TRUE;
     // erase keys
     printf("\nErasing keys...\n");
     memset(session_encryption_key, '0', KEY_SIZE);
@@ -86,10 +86,10 @@ void client_exit(int exit_code) {
  **************************************************************************/
 void display_usage(void) {
     printf("Usage:\n");
-    printf("%s -i <ifacename> [-s|-c <serverIP>] [-p <port>] [-P <protocol>] [-u|-a] [-d]\n", progname);
+    printf("%s -i <ifacename> [-c <serverName>] [-p <port>] [-d]\n", progname);
     printf("%s -h\n", progname);
     printf("\n");
-    printf("-p <port>: port to listen on (if run in server mode) or to connect to (in client mode), default 55555\n");
+    printf("-p <port>: port that SDFS Server is listening on, default 55555\n");
     printf("-d: outputs debug information while running\n");
     printf("-h: prints this help text\n\n");
     client_exit(1);
@@ -101,7 +101,7 @@ void display_usage(void) {
  ***************************************************************************/
 void parse_configuration(void) {
     // specify configuration filename
-    GString *config_filename = g_string_new("sdfs-client.conf");
+    GString *config_filename = g_string_new("config/sdfs-client.conf");
 
     // Create array of cfg_opt_t structs listing the configuration parameters
     // that will be read from the configuration file. For each parameter a default value
@@ -109,7 +109,7 @@ void parse_configuration(void) {
     cfg_opt_t configParameters[] =
             {
                     CFG_INT("default_service_port", 55555, CFGF_NONE),
-                    CFG_STR("default_remote_server_or_gateway", "", CFGF_NONE),
+                    CFG_STR("default_remote_server", "", CFGF_NONE),
                     CFG_STR("default_host_cert_name", "", CFGF_NONE),
                     CFG_STR("default_host_priv_key_name", "", CFGF_NONE),
                     CFG_STR("default_ca_cert_name", "", CFGF_NONE),
@@ -130,7 +130,7 @@ void parse_configuration(void) {
 
     // create strings from config entries
 
-    remote_hostname = cfg_getstr(configuration, "default_remote_server_or_gateway");
+    remote_hostname = cfg_getstr(configuration, "default_remote_server");
     cert = cfg_getstr(configuration, "default_host_cert_name");
     ca_cert = cfg_getstr(configuration, "default_ca_cert_name");
     priv_key = cfg_getstr(configuration, "default_host_priv_key_name");
@@ -139,11 +139,11 @@ void parse_configuration(void) {
 
     // display strings loaded from config file
     printf("\nParsing configuration file \"%s\"...\n", config_filename->str);
-    printf("--default port used by tunnel traffic: %i\n", port);
-    printf("--default remote server or gateway used when in client mode: %s\n", remote_hostname);
-    printf("--default host cert name: %s\n", cert);
+    printf("--default port used by SDFS Server: %i\n", port);
+    printf("--default remote server: %s\n", remote_hostname);
+    printf("--default client cert name: %s\n", cert);
+    printf("--default client priv key name: %s\n", priv_key);
     printf("--default ca cert name: %s\n", ca_cert);
-    printf("--default host priv key name: %s\n", priv_key);
 }
 
 /**************************************************************************
@@ -156,7 +156,7 @@ void parse_commandline_parameters(int argc, char *argv[]) {
     printf("Command line parameters are optional and will override configuration file parameters listed above.\n");
     int option_count = argc;
     /* Check command line options */
-    while((option = getopt(argc, argv, "i:sc:p:uahd")) > 0){
+    while((option = getopt(argc, argv, "c:p:hd")) > 0){
         switch(option) {
             case 'd':
                 debug = 1;
@@ -167,7 +167,7 @@ void parse_commandline_parameters(int argc, char *argv[]) {
                 break;
             case 'p':
                 port = atoi(optarg);
-                printf("--port used by tunnel traffic: %i\n", port);
+                printf("--port used by SDFS Server: %i\n", port);
                 break;
             default:
                 g_error("Unknown option %c\n", option);
@@ -201,14 +201,16 @@ void send_client_credentials() {
 
     int result;
     BufferObject cred_buffer;
-    //printf("TLS: size of username: %d\n", sizeof(client_username));
-    //printf("TLS: size of password: %d\n",sizeof(client_password));
+    //printf("TLS: username: %s\n", client_username);
+    //printf("TLS: size of username: %d\n", strlen(client_username));
+    //printf("TLS: password: %s\n", client_password);
+    //printf("TLS: size of password: %d\n",strlen(client_password));
 
     // copy the username and password into  buffer with a delimiter
-    memcpy(&cred_buffer.data[0],&client_username[0], sizeof(client_username));
-    memcpy(&cred_buffer.data[sizeof(client_username)],&STRING_DELIM, 1);
-    memcpy(&cred_buffer.data[sizeof(client_username) + 1],&client_password[0], sizeof(client_password));
-    cred_buffer.size = sizeof(client_username) + 1 + sizeof(client_password);
+    memcpy(&cred_buffer.data[0],&client_username[0], strlen(client_username));
+    memcpy(&cred_buffer.data[strlen(client_username)],&STRING_DELIM, 1);
+    memcpy(&cred_buffer.data[strlen(client_username) + 1],&client_password[0], strlen(client_password));
+    cred_buffer.size = strlen(client_username) + 1 + strlen(client_password);
 
     printf("TLS: sending client authentication to server (%d bytes total)\n", cred_buffer.size);
     //hexPrint(cred_buffer.data, cred_buffer.size);
@@ -259,7 +261,7 @@ void process_traffic() {
     // create buffer object for inbound and outbound packets
     BufferObject buffer_in, buffer_out;
 
-    while (exit_requested == 0) {
+    while (exit_requested == FALSE) {
         // empty the set
         FD_ZERO(&rd_set);
 
@@ -324,7 +326,7 @@ int main (int argc, char *argv[]) {
     signal(SIGINT, process_signal);
 
     // initialize TLS for control channel
-    result = initialize_tls(ca_cert,cert, priv_key);
+    result = initialize_tls(ca_cert,cert, priv_key, FALSE);
     if (result == 1) {
         client_exit(1);
     }

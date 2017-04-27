@@ -29,8 +29,8 @@
 
 
 int debug, option;
-int has_valid_certs = 1;
-int client_authenticated, exit_requested = 0;
+gboolean has_valid_certs = TRUE;
+gboolean client_authenticated, exit_requested = FALSE;
 uint16_t port = 55555;
 char *progname = "";
 char *remote_hostname = "";
@@ -52,7 +52,7 @@ SSL         *ssl;
  **************************************************************************/
 void server_exit(int exit_code) {
 
-    exit_requested = 1;
+    exit_requested = TRUE;
     // erase keys
     printf("\nErasing keys...\n");
     memset(session_encryption_key, '0', KEY_SIZE);
@@ -86,14 +86,10 @@ void server_exit(int exit_code) {
  **************************************************************************/
 void server_display_usage(void) {
     printf("Usage:\n");
-    printf("%s -i <ifacename> [-s|-c <serverIP>] [-p <port>] [-P <protocol>] [-u|-a] [-d]\n", progname);
+    printf("%s [-p <port>] [-d]\n", progname);
     printf("%s -h\n", progname);
     printf("\n");
-    printf("-i <ifacename>: Name of interface to use (mandatory)\n");
-    printf("-s|-c <serverIP>: run in server mode (-s), or specify server address (-c <serverIP>) (mandatory)\n");
     printf("-p <port>: port to listen on (if run in server mode) or to connect to (in client mode), default 55555\n");
-    printf("-P <protocol>: either tcp or udp, this protocol will be used to tunnel the traffic\n");
-    printf("-u|-a: use TUN (-u, default) or TAP (-a)\n");
     printf("-d: outputs debug information while running\n");
     printf("-h: prints this help text\n\n");
     server_exit(1);
@@ -106,7 +102,7 @@ void server_display_usage(void) {
  ***************************************************************************/
 void server_parse_configuration(void) {
     // specify configuration filename
-    GString *config_filename = g_string_new("sdfs-server.conf");
+    GString *config_filename = g_string_new("config/sdfs-server.conf");
 
     // Create array of cfg_opt_t structs listing the configuration parameters
     // that will be read from the configuration file. For each parameter a default value
@@ -140,8 +136,8 @@ void server_parse_configuration(void) {
     printf("---------------------------------------------\n");
     printf("--default SDFS server port: %i\n", port);
     printf("--default host cert name: %s\n", cert);
-    printf("--default ca cert name: %s\n", ca_cert);
     printf("--default host priv key name: %s\n", priv_key);
+    printf("--default ca cert name: %s\n", ca_cert);
 }
 
 /**************************************************************************
@@ -167,7 +163,7 @@ void server_parse_commandline_parameters(int argc, char *argv[]) {
                 break;
             case 'p':
                 port = atoi(optarg);
-                printf("--port used by tunnel traffic: %i\n", port);
+                printf("--port used to listen for TLS connections from clients: %i\n", port);
                 break;
             default:
                 g_error("Unknown option %c\n", option);
@@ -204,7 +200,7 @@ void server_process_traffic() {
     // create buffer object for inbound and outbound packets
     BufferObject buffer_in, buffer_out;
 
-    while (exit_requested == 0) {
+    while (exit_requested == FALSE) {
         // empty the set
         FD_ZERO(&rd_set);
 
@@ -269,7 +265,7 @@ int main (int argc, char *argv[]) {
     signal(SIGINT, server_process_signal);
 
     // initialize TLS for control channel
-    initialize_tls(ca_cert,cert, priv_key);
+    initialize_tls(ca_cert,cert, priv_key, TRUE);
 
     // create socket for tcp channel
     result = create_tcp_socket();

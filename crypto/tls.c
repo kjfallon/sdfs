@@ -4,17 +4,18 @@
 
 extern SSL_CTX     *ssl_ctx;
 extern SSL         *ssl;
-extern int has_valid_certs, tcp_net_fd;
+extern gboolean has_valid_certs;
+extern int tcp_net_fd;
 extern unsigned char session_encryption_key[KEY_SIZE];
 extern unsigned char session_hmac_key[IV_SIZE];
 extern char *remote_hostname;
-extern int client_authenticated;
+extern gboolean client_authenticated;
 
 /***************************************************************************
  * Create SSL context                                                      *
  *                                                                         *
  ***************************************************************************/
-int initialize_tls( char *ca_cert, char *cert, char *priv_key) {
+int initialize_tls( char *ca_cert, char *cert, char *priv_key, gboolean is_server) {
 
 
 
@@ -26,24 +27,30 @@ int initialize_tls( char *ca_cert, char *cert, char *priv_key) {
     RAND_poll();
 
     // Specify to use TLS (as opposed to SSL v2 or v3)
-    ssl_ctx = SSL_CTX_new(TLSv1_server_method());
+    if (is_server == TRUE) {
+        ssl_ctx = SSL_CTX_new(TLSv1_server_method());
+    }
+    else {
+        ssl_ctx = SSL_CTX_new(TLSv1_client_method());
+    }
+
 
     SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
     SSL_CTX_load_verify_locations(ssl_ctx, ca_cert, NULL);
 
     // load certificate
     if (SSL_CTX_use_certificate_file(ssl_ctx, cert, SSL_FILETYPE_PEM) != 1) {
-        has_valid_certs == 0;
+        has_valid_certs == FALSE;
         perror("TLS: Unable to load certificate");
     }
     // load private key
     if (SSL_CTX_use_PrivateKey_file (ssl_ctx, priv_key, SSL_FILETYPE_PEM) != 1) {
-        has_valid_certs == 0;
+        has_valid_certs == FALSE;
         perror("TLS: Unable to load private key");
     }
     // check if this is the private key for the pub key in the cert
     if (SSL_CTX_check_private_key(ssl_ctx) != 1) {
-        has_valid_certs == 0;
+        has_valid_certs == FALSE;
         perror("TLS: Private key and cert mismatch");
     }
     else {
@@ -198,7 +205,7 @@ int validate_client_credentials(char *username, char *password) {
 
     if( strcmp(password_hash, shadow_password->sp_pwdp) == 0 ) {
         printf("TLS: CLIENT AUTH OK, client credentials match local user\n");
-        client_authenticated = 1;
+        client_authenticated = TRUE;
     }
     else {
         printf("TLS: client auth failed\n");

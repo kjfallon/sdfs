@@ -20,7 +20,7 @@
 #include "../output/console.h"
 #include "pki.h"
 
-int initialize_tls(char *ca_cert, char *cert, char *priv_key);
+int initialize_tls(char *ca_cert, char *cert, char *priv_key, gboolean is_server);
 int accept_tls_connections();
 int connect_to_tls();
 int write_to_tls(BufferObject *buffer);
