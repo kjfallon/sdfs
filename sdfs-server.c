@@ -133,7 +133,7 @@ void server_parse_configuration(void) {
 
     // display strings loaded from config file
     printf("\nParsing configuration file \"%s\"\n", config_filename->str);
-    printf("---------------------------------------------\n");
+    printf("---------------------------------------------------\n");
     printf("--default SDFS server port: %i\n", port);
     printf("--default host cert name: %s\n", cert);
     printf("--default host priv key name: %s\n", priv_key);
@@ -251,9 +251,9 @@ int main (int argc, char *argv[]) {
     int result;
 
     progname = argv[0];
-    printf("\n**********************\n");
+    printf("\n********************\n");
     printf("SDFS Server Launched\n");
-    printf("**********************\n");
+    printf("********************\n");
 
     // Read configuration from config file
     server_parse_configuration();

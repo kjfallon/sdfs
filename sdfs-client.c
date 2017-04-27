@@ -138,7 +138,8 @@ void parse_configuration(void) {
     client_password = cfg_getstr(configuration, "default_client_password");
 
     // display strings loaded from config file
-    printf("\nParsing configuration file \"%s\"...\n", config_filename->str);
+    printf("\nParsing configuration file \"%s\"\n", config_filename->str);
+    printf("---------------------------------------------------\n");
     printf("--default port used by SDFS Server: %i\n", port);
     printf("--default remote server: %s\n", remote_hostname);
     printf("--default client cert name: %s\n", cert);
@@ -152,8 +153,10 @@ void parse_configuration(void) {
  ***************************************************************************/
 void parse_commandline_parameters(int argc, char *argv[]) {
 
-    printf("\nParsing parameters specified on command line...\n");
-    printf("Command line parameters are optional and will override configuration file parameters listed above.\n");
+    printf("\nParsing parameters specified on command line\n");
+    printf("--------------------------------------------\n");
+    printf("Command line parameters are optional and will override\n");
+    printf("configuration file parameters listed above.\n");
     int option_count = argc;
     /* Check command line options */
     while((option = getopt(argc, argv, "c:p:hd")) > 0){
@@ -314,7 +317,9 @@ int main (int argc, char *argv[]) {
     int result;
 
     progname = argv[0];
-    printf("\nSDFS Client Launched\n");
+    printf("\n********************\n");
+    printf("SDFS Client Launched\n");
+    printf("********************\n");
 
     // Read configuration from config file
     parse_configuration();

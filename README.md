@@ -28,17 +28,20 @@ libConfuse https://github.com/martinh/libconfuse
 # Client Execution Example
 
 ``` $ ./sdfs-client
-
+********************
 SDFS Client Launched
+********************
 
-Parsing configuration file "config/sdfs-client.conf"...
+Parsing configuration file "config/sdfs-client.conf"
+---------------------------------------------------
 --default port used by SDFS Server: 44444
 --default remote server: sdfs-server
 --default client cert name: certs/sdfs-client.crt
 --default client priv key name: certs/sdfs-client.key
 --default ca cert name: certs/cacert.pem
 
-Parsing parameters specified on command line...
+Parsing parameters specified on command line
+--------------------------------------------
 Command line parameters are optional and will override configuration file parameters listed above.
 No command line parameters were specified.
 
@@ -60,9 +63,9 @@ $
 # Server Execution Example
 ```$ sudo ./sdfs-server
 
-   **********************
+   ********************
    SDFS Server Launched
-   **********************
+   ********************
 
    Parsing configuration file "config/sdfs-server.conf"
    ---------------------------------------------
