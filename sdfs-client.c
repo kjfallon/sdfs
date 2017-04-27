@@ -15,6 +15,7 @@
 #include <confuse.h>
 #include <openssl/rand.h>
 
+#include "sdfs.h"
 #include "network/tcp.h"
 #include "crypto/encrypt.h"
 #include "crypto/mac.h"
@@ -218,7 +219,7 @@ void send_client_credentials() {
     printf("TLS: sending client authentication to server (%d bytes total)\n", cred_buffer.size);
     //hexPrint(cred_buffer.data, cred_buffer.size);
 
-    result = write_to_tls(&cred_buffer);
+    result = write_to_tls(&cred_buffer, LOGIN);
     if (result ==1) {
         client_exit(1);
     }
@@ -245,7 +246,7 @@ void send_session_encryption_keys() {
     printf("TLS: sending keys to server (%d bytes total)\n", key_buffer.size);
     //hexPrint(key_buffer.data, key_buffer.size);
 
-    result = write_to_tls(&key_buffer);
+    result = write_to_tls(&key_buffer, SET_KEY);
     if (result == 1) {
         client_exit(1);
     }

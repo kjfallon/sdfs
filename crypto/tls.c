@@ -1,4 +1,5 @@
 #include "tls.h"
+#include "../sdfs.h"
 
 #define CHAR_DELIM   '\x7f'
 
@@ -82,7 +83,22 @@ int accept_tls_connections() {
     return 0;
 }
 
-int write_to_tls(BufferObject *buffer) {
+int write_to_tls(BufferObject *buffer, uint8_t message_type) {
+
+    switch (message_type) {
+        case HELLO:
+        case OK:
+        case BAD_NONCE:
+        case LOGIN:
+        case LOGOUT:
+        case SET_PERM:
+        case DELEGATE_PERM:
+        case GET_FILE:
+        case FILE_DATA:
+        case BAD_COMMAND:
+            break;
+    }
+
     // write buffer to ssl control channel
     if( (SSL_write(ssl, (uint8_t *)&buffer->data, buffer->size)) <= 0) {
         ERR_print_errors_fp(stderr);

@@ -18,6 +18,7 @@
  * https://github.com/martinh/libconfuse */
 #include <confuse.h>
 
+#include "sdfs.h"
 #include "network/tcp.h"
 #include "crypto/encrypt.h"
 #include "crypto/mac.h"

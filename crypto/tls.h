@@ -23,7 +23,7 @@
 int initialize_tls(char *ca_cert, char *cert, char *priv_key, gboolean is_server);
 int accept_tls_connections();
 int connect_to_tls();
-int write_to_tls(BufferObject *buffer);
+int write_to_tls(BufferObject *buffer, uint8_t message_type);
 int read_from_tls(BufferObject *buffer);
 int validate_client_credentials(char *username, char *password);
 
