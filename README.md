@@ -63,6 +63,26 @@ user_login("userB", "pwd456");
 TLS: wrote message LOGIN 13 bytes
 TLS: read 2 bytes from channel: 027f
 TLS: received message OK
+file_permission_set("userA");
+TLS: wrote message SET_PERM 6 bytes
+TLS: read 2 bytes from channel: 0b7f
+TLS: received message NOT_IMPLEMENTED
+file_access("userA"); //success
+TLS: wrote message GET_FILE 6 bytes
+TLS: read 2 bytes from channel: 0b7f
+TLS: received message NOT_IMPLEMENTED
+file_access("userB"); //failure
+TLS: wrote message GET_FILE 6 bytes
+TLS: read 2 bytes from channel: 0b7f
+TLS: received message NOT_IMPLEMENTED
+file_delegate("userA", "userB");
+TLS: wrote message DELEGATE_PERM 12 bytes
+TLS: read 2 bytes from channel: 0b7f
+TLS: received message NOT_IMPLEMENTED
+file_access("userB"); //success
+TLS: wrote message GET_FILE 6 bytes
+TLS: read 2 bytes from channel: 0b7f
+TLS: received message NOT_IMPLEMENTED
 user_logout("userA");
 TLS: wrote message LOGOUT 6 bytes
 TLS: read 2 bytes from channel: 027f
@@ -115,6 +135,16 @@ TLS: received client auth username: userB
 TLS: received client auth password: pwd456
 TLS: CLIENT AUTH OK, client credentials match local OS user
 TLS: wrote message OK 2 bytes
+TLS: read 6 bytes from channel: 067573657241
+TLS: received message SET_PERM
+TLS: read 6 bytes from channel: 087573657241
+TLS: received message GET_FILE
+TLS: read 6 bytes from channel: 087573657242
+TLS: received message GET_FILE
+TLS: read 12 bytes from channel: 0775736572417f7573657242
+TLS: received message DELEGATE_PERM
+TLS: read 6 bytes from channel: 087573657242
+TLS: received message GET_FILE
 TLS: read 6 bytes from channel: 057573657241
 TLS: received message LOGOUT
 TLS: received logout request for username: userA

@@ -204,18 +204,21 @@ int read_from_tls(BufferObject *buffer) {
             break;
         case SET_PERM:
             printf("TLS: received message SET_PERM\n");
+            write_message_to_tls(&reply, NOT_IMPLEMENTED);
             break;
         case DELEGATE_PERM:
             printf("TLS: received message DELEGATE_PERM\n");
+            write_message_to_tls(&reply, NOT_IMPLEMENTED);
             break;
         case GET_FILE:
             printf("TLS: received message GET_FILE\n");
-            break;
-        case FILE_DATA:
-            printf("TLS: received message FILE_DATA\n");
+            write_message_to_tls(&reply, NOT_IMPLEMENTED);
             break;
         case BAD_COMMAND:
             printf("TLS: received message BAD_COMMAND\n");
+            break;
+        case NOT_IMPLEMENTED:
+            printf("TLS: received message NOT_IMPLEMENTED\n");
             break;
         case QUIT:
             printf("TLS: received message QUIT\n");

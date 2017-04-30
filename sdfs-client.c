@@ -235,6 +235,54 @@ void user_logout(char *username) {
     }
 }
 
+void file_permission_set(char *username) {
+
+    int result;
+    BufferObject this_buffer;
+
+    // copy the username
+    memcpy(&this_buffer.data[0], &username[0], strlen(username));
+    this_buffer.size = strlen(username);
+
+    result = write_message_to_tls(&this_buffer, SET_PERM);
+    if (result ==1) {
+        client_exit(1);
+    }
+}
+
+void file_access(char *username) {
+
+    int result;
+    BufferObject this_buffer;
+
+    // copy the username
+    memcpy(&this_buffer.data[0], &username[0], strlen(username));
+    this_buffer.size = strlen(username);
+
+    result = write_message_to_tls(&this_buffer, GET_FILE);
+    if (result ==1) {
+        client_exit(1);
+    }
+}
+
+void file_delegate(char *username1, char *username2) {
+
+    int result;
+    BufferObject this_buffer;
+
+    // copy the usernames into buffer with a delimiter
+    memcpy(&this_buffer.data[0], &username1[0], strlen(username1));
+    memcpy(&this_buffer.data[strlen(username1)], &STRING_DELIM, 1);
+    memcpy(&this_buffer.data[strlen(username1) + 1], &username2[0], strlen(username2));
+    this_buffer.size = strlen(username1) + 1 + strlen(username2);
+
+    result = write_message_to_tls(&this_buffer, DELEGATE_PERM);
+    if (result ==1) {
+        client_exit(1);
+    }
+}
+
+
 void process_traffic(int duration) {
 
     // if the duration was specifed as 0 then listen forever
@@ -353,12 +401,25 @@ int main (int argc, char *argv[]) {
     send_client_credentials("userB");
     process_traffic(1);
 
-    //file_permission_set("userA");
-    //file_access("userA"); //success
-    //file_access("userB"); //failure
-    //file_delegate("userA", "userB");
-    //file_access("userB"); //success
+    printf("file_permission_set(\"userA\");\n");
+    file_permission_set("userA");
+    process_traffic(1);
 
+    printf("file_access(\"userA\"); //success\n");
+    file_access("userA");
+    process_traffic(1);
+
+    printf("file_access(\"userB\"); //failure\n");
+    file_access("userB");
+    process_traffic(1);
+
+    printf("file_delegate(\"userA\", \"userB\");\n");
+    file_delegate("userA", "userB");
+    process_traffic(1);
+
+    printf("file_access(\"userB\"); //success\n");
+    file_access("userB");
+    process_traffic(1);
 
     printf("user_logout(\"userA\");\n");
     user_logout("userA");

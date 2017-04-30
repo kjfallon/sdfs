@@ -41,7 +41,8 @@ enum message_type {
     DELEGATE_PERM   = 0x07,
     GET_FILE        = 0x08,
     FILE_DATA       = 0x09,
-    BAD_COMMAND     = 0x0A
+    BAD_COMMAND     = 0x0A,
+    NOT_IMPLEMENTED = 0x0B
 
 };
 
