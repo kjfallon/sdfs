@@ -28,7 +28,7 @@ libConfuse https://github.com/martinh/libconfuse
 
 Ubuntu command to install required packages:
 ```
-$ sudo apt-get install cmake g++ libssl-dev pkg-config libglib2.0-dev libglib2.0-dev
+$ sudo apt-get install cmake g++ libssl-dev pkg-config libglib2.0-dev libconfuse-dev
 ```
 # Client Execution Example
 
