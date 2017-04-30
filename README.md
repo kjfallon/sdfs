@@ -22,6 +22,8 @@ user_logout("userB");
 
 CMake https://cmake.org/
 
+OpenSSL https://www.openssl.org/
+
 GLib-2.0 https://developer.gnome.org/glib/ 
 
 libConfuse https://github.com/martinh/libconfuse
