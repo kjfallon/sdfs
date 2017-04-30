@@ -8,13 +8,13 @@
 
 int debug, option;
 gboolean has_valid_certs = TRUE;
-gboolean client_authenticated, exit_requested = FALSE;
+gboolean userA_authenticated, userB_authenticated, exit_requested = FALSE;
 uint16_t port = 55555;
 char *progname = "";
 char *if_name = "";
 char *remote_hostname = "";
 char *ca_cert, *cert, *priv_key;
-char *client_username, *client_password;
+char *clientA_username, *clientA_password, *clientB_username, *clientB_password;
 int tcp_sock_fd;
 struct sockaddr_in local, remote;
 int tcp_net_fd, optval = 1;
@@ -37,7 +37,7 @@ void client_exit(int exit_code) {
     printf("\nErasing keys...\n");
     memset(session_encryption_key, '0', KEY_SIZE);
     memset(session_hmac_key, '0', KEY_SIZE);
-    
+
     // close tls
     if (ssl) {
         printf("TLS: closed\n");
@@ -93,8 +93,10 @@ void parse_configuration(void) {
                     CFG_STR("default_host_cert_name", "", CFGF_NONE),
                     CFG_STR("default_host_priv_key_name", "", CFGF_NONE),
                     CFG_STR("default_ca_cert_name", "", CFGF_NONE),
-                    CFG_STR("default_client_username", "", CFGF_NONE),
-                    CFG_STR("default_client_password", "", CFGF_NONE),
+                    CFG_STR("default_clientA_username", "", CFGF_NONE),
+                    CFG_STR("default_clientA_password", "", CFGF_NONE),
+                    CFG_STR("default_clientB_username", "", CFGF_NONE),
+                    CFG_STR("default_clientB_password", "", CFGF_NONE),
                     CFG_END()
             };
 
@@ -114,8 +116,10 @@ void parse_configuration(void) {
     cert = cfg_getstr(configuration, "default_host_cert_name");
     ca_cert = cfg_getstr(configuration, "default_ca_cert_name");
     priv_key = cfg_getstr(configuration, "default_host_priv_key_name");
-    client_username = cfg_getstr(configuration, "default_client_username");
-    client_password = cfg_getstr(configuration, "default_client_password");
+    clientA_username = cfg_getstr(configuration, "default_clientA_username");
+    clientA_password = cfg_getstr(configuration, "default_clientA_password");
+    clientB_username = cfg_getstr(configuration, "default_clientB_username");
+    clientB_password = cfg_getstr(configuration, "default_clientB_password");
 
     // display strings loaded from config file
     printf("\nParsing configuration file \"%s\"\n", config_filename->str);
@@ -180,20 +184,29 @@ void parse_commandline_parameters(int argc, char *argv[]) {
 
 
 
-void send_client_credentials() {
+void send_client_credentials(char *username) {
 
     int result;
     BufferObject cred_buffer;
-    //printf("TLS: username: %s\n", client_username);
-    //printf("TLS: size of username: %d\n", strlen(client_username));
-    //printf("TLS: password: %s\n", client_password);
-    //printf("TLS: size of password: %d\n",strlen(client_password));
 
-    // copy the username and password into  buffer with a delimiter
-    memcpy(&cred_buffer.data[0],&client_username[0], strlen(client_username));
-    memcpy(&cred_buffer.data[strlen(client_username)],&STRING_DELIM, 1);
-    memcpy(&cred_buffer.data[strlen(client_username) + 1],&client_password[0], strlen(client_password));
-    cred_buffer.size = strlen(client_username) + 1 + strlen(client_password);
+    if (strcmp(username, "userA") == 0) {
+        // copy the username and password into  buffer with a delimiter
+        memcpy(&cred_buffer.data[0], &clientA_username[0], strlen(clientA_username));
+        memcpy(&cred_buffer.data[strlen(clientA_username)], &STRING_DELIM, 1);
+        memcpy(&cred_buffer.data[strlen(clientA_username) + 1], &clientA_password[0], strlen(clientA_password));
+        cred_buffer.size = strlen(clientA_username) + 1 + strlen(clientA_password);
+    }
+    else if (strcmp(username, "userB") == 0) {
+        // copy the username and password into  buffer with a delimiter
+        memcpy(&cred_buffer.data[0], &clientB_username[0], strlen(clientB_username));
+        memcpy(&cred_buffer.data[strlen(clientB_username)], &STRING_DELIM, 1);
+        memcpy(&cred_buffer.data[strlen(clientB_username) + 1], &clientB_password[0], strlen(clientB_password));
+        cred_buffer.size = strlen(clientB_username) + 1 + strlen(clientB_password);
+    }
+    else {
+        printf("Invalid username specified for authentication.\n");
+        client_exit(1);
+    }
 
     //printf("TLS: sending client authentication to server (%d bytes total)\n", cred_buffer.size);
     //hexPrint(cred_buffer.data, cred_buffer.size);
@@ -204,7 +217,31 @@ void send_client_credentials() {
     }
 }
 
-void process_traffic() {
+void user_logout(char *username) {
+
+    int result;
+    BufferObject logout_buffer;
+
+    // copy the username
+    memcpy(&logout_buffer.data[0], &username[0], strlen(username));
+    logout_buffer.size = strlen(username);
+
+    //printf("TLS: sending client logout to server (%d bytes total)\n", logout_buffer.size);
+    //hexPrint(logout_buffer.data, logout_buffer.size);
+
+    result = write_message_to_tls(&logout_buffer, LOGOUT);
+    if (result ==1) {
+        client_exit(1);
+    }
+}
+
+void process_traffic(int duration) {
+
+    // if the duration was specifed as 0 then listen forever
+    // setting duration to INT_MAX will prevent packet counter from incrementing
+    if (duration == 0) {
+        duration = INT_MAX;
+    }
 
     int maxfd, result;
     /* use select() to handle descriptors */
@@ -216,8 +253,8 @@ void process_traffic() {
     fd_set rd_set;
     // create buffer object for inbound and outbound packets
     BufferObject buffer_in, buffer_out;
-
-    while (exit_requested == FALSE) {
+    int packet_count = 0;
+    while ((exit_requested == FALSE) && (packet_count < duration)) {
         // empty the set
         FD_ZERO(&rd_set);
 
@@ -236,16 +273,16 @@ void process_traffic() {
             client_exit(1);
         }
 
-        // check if the activity was TCP tunnel control on the network device
+        // check if the activity was tcp on the network device
         if (FD_ISSET(tcp_net_fd, &rd_set)) {
-            //printf("NET2TAP activity on control channel\n");
 
-            //control data: read it
+            //tcp data: read it
             result = read_from_tls(&buffer_in);
+            if (duration != INT_MAX) {packet_count++;}
             if (result ==1) {
                 client_exit(1);
             }
-            //printf("TLS control channel read %d bytes\n", buffer_in.size);
+            //printf("TLS channel read %d bytes\n", buffer_in.size);
 
         }
 
@@ -308,9 +345,31 @@ int main (int argc, char *argv[]) {
     }
 
     // authenticate to server over TLS
-    send_client_credentials();
+    printf("user_login(\"userA\", \"pwd123\");\n");
+    send_client_credentials("userA");
+    process_traffic(1);
 
-    process_traffic();
+    printf("user_login(\"userB\", \"pwd456\");\n");
+    send_client_credentials("userB");
+    process_traffic(1);
+
+    //file_permission_set("userA");
+    //file_access("userA"); //success
+    //file_access("userB"); //failure
+    //file_delegate("userA", "userB");
+    //file_access("userB"); //success
+
+
+    printf("user_logout(\"userA\");\n");
+    user_logout("userA");
+    process_traffic(1);
+
+    printf("user_logout(\"userB\");\n");
+    user_logout("userB");
+    process_traffic(1);
+
+    // listen for data from server
+    process_traffic(0);
 
     client_exit(0);
 }

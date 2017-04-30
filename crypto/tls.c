@@ -7,13 +7,12 @@
 
 extern SSL_CTX     *ssl_ctx;
 extern SSL         *ssl;
-extern gboolean has_valid_certs;
+extern gboolean has_valid_certs, userA_authenticated, userB_authenticated;
 extern int tcp_net_fd;
 extern unsigned char session_encryption_key[KEY_SIZE];
 extern unsigned char session_hmac_key[IV_SIZE];
 extern unsigned char current_nonce[NONCE_SIZE];
 extern char *remote_hostname;
-extern gboolean client_authenticated;
 
 /***************************************************************************
  * Create SSL context                                                      *
@@ -168,6 +167,10 @@ int read_from_tls(BufferObject *buffer) {
     //printf("%02x\n", message_type);
 
     int result;
+    BufferObject reply;
+    memcpy(&reply.data[0],&STRING_DELIM, 1);
+    reply.size = 1;
+
     switch (message_type) {
         case HELLO:
             printf("TLS: received message HELLO\n");
@@ -180,9 +183,6 @@ int read_from_tls(BufferObject *buffer) {
             //process authentication
             result = validate_client_credentials(&message);
             // notify client of result
-            BufferObject reply;
-            memcpy(&reply.data[0],&STRING_DELIM, 1);
-            reply.size = 1;
             if (result == 0) {
                 write_message_to_tls(&reply, OK);
             }
@@ -192,6 +192,15 @@ int read_from_tls(BufferObject *buffer) {
             break;
         case LOGOUT:
             printf("TLS: received message LOGOUT\n");
+            //process logout
+            result = logout_authenticated_user(&message);
+            // notify client of result
+            if (result == 0) {
+                write_message_to_tls(&reply, OK);
+            }
+            else {
+                write_message_to_tls(&reply, BAD_COMMAND);
+            }
             break;
         case SET_PERM:
             printf("TLS: received message SET_PERM\n");
@@ -321,10 +330,45 @@ int validate_client_credentials(BufferObject *message) {
 
     if( strcmp(password_hash, shadow_password->sp_pwdp) == 0 ) {
         printf("TLS: CLIENT AUTH OK, client credentials match local OS user\n");
-        client_authenticated = TRUE;
+        if (strcmp(username, "userA") == 0) {
+            userA_authenticated = TRUE;
+        }
+        else if (strcmp(username, "userB") == 0) {
+            userB_authenticated = TRUE;
+        }
     }
     else {
         printf("TLS: client auth failed\n");
+        return 1;
+    }
+
+    return 0;
+}
+
+/***************************************************************************
+ * Log out an authenticated user                                           *
+ *                                                                         *
+ ***************************************************************************/
+int logout_authenticated_user(BufferObject *message) {
+
+    /* extract username from payload */
+    int username_length = message->size;
+    char username[username_length + 1];
+
+    memcpy(&username[0],&message->data[0], username_length);
+    username[username_length] = '\0';
+    printf("TLS: received logout request for username: %s\n", username);
+
+    if ((strcmp(username, "userA") == 0) && (userA_authenticated == TRUE) )  {
+        userA_authenticated == FALSE;
+        printf("TLS: user logged out\n");
+    }
+    else if ((strcmp(username, "userB") == 0) && (userB_authenticated = TRUE) ) {
+        userB_authenticated == FALSE;
+        printf("TLS: user logged out\n");
+    }
+    else {
+        printf("TLS: Either invalid user or not logged in\n");
         return 1;
     }
 

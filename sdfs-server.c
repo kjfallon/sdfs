@@ -6,7 +6,7 @@
 
 int debug, option;
 gboolean has_valid_certs = TRUE;
-gboolean client_authenticated, exit_requested = FALSE;
+gboolean userA_authenticated, userB_authenticated, exit_requested = FALSE;
 uint16_t port = 55555;
 char *progname = "";
 char *remote_hostname = "";
