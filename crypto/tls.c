@@ -104,34 +104,34 @@ int write_message_to_tls(BufferObject *buffer, uint8_t message_type) {
     }
     switch (message_type) {
         case HELLO:
-            printf("TLS: wrote message HELLO %d bytes\n", message.size );
+            printf("TLS: wrote message HELLO %d bytes\n", (int)message.size );
             break;
         case OK:
-            printf("TLS: wrote message OK %d bytes\n", message.size );
+            printf("TLS: wrote message OK %d bytes\n", (int)message.size );
             break;
         case LOGIN:
-            printf("TLS: wrote message LOGIN %d bytes\n", message.size );
+            printf("TLS: wrote message LOGIN %d bytes\n", (int)message.size );
             break;
         case LOGOUT:
-            printf("TLS: wrote message LOGOUT %d bytes\n", message.size );
+            printf("TLS: wrote message LOGOUT %d bytes\n", (int)message.size );
             break;
         case SET_PERM:
-            printf("TLS: wrote message SET_PERM %d bytes\n", message.size );
+            printf("TLS: wrote message SET_PERM %d bytes\n", (int)message.size );
             break;
         case DELEGATE_PERM:
-            printf("TLS: wrote message DELEGATE_PERM %d bytes\n", message.size );
+            printf("TLS: wrote message DELEGATE_PERM %d bytes\n", (int)message.size );
             break;
         case GET_FILE:
-            printf("TLS: wrote message GET_FILE %d bytes\n", message.size );
+            printf("TLS: wrote message GET_FILE %d bytes\n", (int)message.size );
             break;
         case FILE_DATA:
-            printf("TLS: wrote message FILE_DATA %d bytes\n", message.size );
+            printf("TLS: wrote message FILE_DATA %d bytes\n", (int)message.size );
             break;
         case BAD_COMMAND:
-            printf("TLS: wrote message BAD_COMMAND %d bytes\n", message.size );
+            printf("TLS: wrote message BAD_COMMAND %d bytes\n", (int)message.size );
             break;
         case QUIT:
-            printf("TLS: wrote message QUIT %d bytes\n", message.size );
+            printf("TLS: wrote message QUIT %d bytes\n", (int)message.size );
             break;
 
     }
@@ -151,7 +151,7 @@ int read_from_tls(BufferObject *buffer) {
         ERR_print_errors_fp(stderr);
         return 1;
     }
-    printf("TLS: read %d bytes from channel: ", buffer->size);
+    printf("TLS: read %d bytes from channel: ", (int)buffer->size);
     hexPrint(buffer->data, buffer->size);
 
     // Extract the message type from the buffer of bytes sent over TLS
@@ -244,7 +244,7 @@ int write_bytes_to_tls(BufferObject *buffer) {
         return 1;
     }
 
-    printf( "TLS: wrote %d bytes\n", buffer->size );
+    printf( "TLS: wrote %d bytes\n", (int)buffer->size );
     hexPrint(buffer->data, buffer->size);
 
     return 0;

@@ -13,8 +13,7 @@
 #include <openssl/x509.h>
 #include <openssl/ssl.h>
 #include <openssl/err.h>
-#include <glib/gtypes.h>
-#include <glib/gmessages.h>
+#include <glib.h>
 #include <shadow.h>
 #include <crypt.h>
 
@@ -28,6 +27,6 @@ int write_message_to_tls(BufferObject *buffer, uint8_t message_type);
 int write_bytes_to_tls(BufferObject *buffer);
 int read_from_tls(BufferObject *buffer);
 int validate_client_credentials(BufferObject *message);
-
+int logout_authenticated_user(BufferObject *message); 
 
 #endif //SDFS_TLS_H
