@@ -26,6 +26,10 @@ GLib-2.0 https://developer.gnome.org/glib/
 
 libConfuse https://github.com/martinh/libconfuse
 
+Ubuntu command to install required packages:
+```
+$ sudo apt-get install cmake g++ libssl-dev pkg-config libglib2.0-dev libglib2.0-dev
+```
 # Client Execution Example
 
 ```
