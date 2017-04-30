@@ -17,8 +17,9 @@ struct sockaddr_in local, remote;
 int tcp_net_fd, optval = 1;
 socklen_t remotelen = sizeof(remote);
 unsigned char session_encryption_key[KEY_SIZE];
-unsigned char session_hmac_key[KEY_SIZE];
 unsigned char cbc_iv[IV_SIZE];
+unsigned char session_hmac_key[KEY_SIZE];
+unsigned char current_nonce[NONCE_SIZE];
 
 SSL_CTX     *ssl_ctx;
 SSL         *ssl;

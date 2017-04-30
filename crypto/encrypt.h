@@ -11,6 +11,7 @@
 
 #define IV_SIZE 16
 #define KEY_SIZE 16
+#define NONCE_SIZE 16
 
 typedef struct {
     uint8_t data[BUFSIZE];

@@ -20,8 +20,9 @@ struct sockaddr_in local, remote;
 int tcp_net_fd, optval = 1;
 socklen_t remotelen = sizeof(remote);
 unsigned char session_encryption_key[KEY_SIZE];
-unsigned char session_hmac_key[KEY_SIZE];
 unsigned char cbc_iv[IV_SIZE];
+unsigned char session_hmac_key[KEY_SIZE];
+unsigned char current_nonce[NONCE_SIZE];
 
 SSL_CTX     *ssl_ctx;
 SSL         *ssl;
@@ -194,38 +195,11 @@ void send_client_credentials() {
     memcpy(&cred_buffer.data[strlen(client_username) + 1],&client_password[0], strlen(client_password));
     cred_buffer.size = strlen(client_username) + 1 + strlen(client_password);
 
-    printf("TLS: sending client authentication to server (%d bytes total)\n", cred_buffer.size);
+    //printf("TLS: sending client authentication to server (%d bytes total)\n", cred_buffer.size);
     //hexPrint(cred_buffer.data, cred_buffer.size);
 
-    result = write_to_tls(&cred_buffer, LOGIN);
+    result = write_message_to_tls(&cred_buffer, LOGIN);
     if (result ==1) {
-        client_exit(1);
-    }
-}
-
-void send_session_encryption_keys() {
-
-    int result;
-    BufferObject key_buffer;
-    // create random session encryption and hmac keys
-    RAND_bytes(session_encryption_key, KEY_SIZE);
-    RAND_bytes(session_hmac_key, KEY_SIZE);
-    // add the keys to the buffer
-    memcpy(&key_buffer.data[0],&session_encryption_key[0], KEY_SIZE);
-    memcpy(&key_buffer.data[KEY_SIZE],&session_hmac_key[0], KEY_SIZE);
-    key_buffer.size = KEY_SIZE + KEY_SIZE;
-
-    //printf("TLS: keys for udp tunnel...\n");
-    printf("TLS: created new encryption key: ");
-    hexPrint(session_encryption_key, KEY_SIZE);
-    printf("TLS: created new hmac key:       ");
-    hexPrint(session_hmac_key,KEY_SIZE);
-
-    printf("TLS: sending keys to server (%d bytes total)\n", key_buffer.size);
-    //hexPrint(key_buffer.data, key_buffer.size);
-
-    result = write_to_tls(&key_buffer, SET_KEY);
-    if (result == 1) {
         client_exit(1);
     }
 }
@@ -309,7 +283,7 @@ int main (int argc, char *argv[]) {
     // safely handle interrupt signals
     signal(SIGINT, process_signal);
 
-    // initialize TLS for control channel
+    // initialize TLS
     result = initialize_tls(ca_cert,cert, priv_key, FALSE);
     if (result == 1) {
         client_exit(1);
@@ -321,19 +295,19 @@ int main (int argc, char *argv[]) {
         client_exit(1);
     }
 
-    // create tcp connection to server for control channel
+    // create tcp connection to server
     result = connect_tcp_to_remote_server();
     if (result ==1) {
         client_exit(1);
     }
 
-    // create control channel
+    // create TLS channel
     result = connect_to_tls();
     if (result ==1) {
         client_exit(1);
     }
 
-    // authenticate to server over tls control channel
+    // authenticate to server over TLS
     send_client_credentials();
 
     process_traffic();
