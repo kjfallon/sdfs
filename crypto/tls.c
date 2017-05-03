@@ -32,10 +32,10 @@ int initialize_tls( char *ca_cert, char *cert, char *priv_key, gboolean is_serve
 
     // Specify to use TLS (as opposed to SSL v2 or v3)
     if (is_server == TRUE) {
-        ssl_ctx = SSL_CTX_new(TLSv1_server_method());
+        ssl_ctx = SSL_CTX_new(TLSv1_2_server_method());
     }
     else {
-        ssl_ctx = SSL_CTX_new(TLSv1_client_method());
+        ssl_ctx = SSL_CTX_new(TLSv1_2_client_method());
     }
 
 
