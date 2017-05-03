@@ -8,6 +8,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <syslog.h>
 
 /* OpenSSL provides cryptography libraries
  * https://www.openssl.org/ */

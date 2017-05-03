@@ -20,6 +20,7 @@ unsigned char session_encryption_key[KEY_SIZE];
 unsigned char cbc_iv[IV_SIZE];
 unsigned char session_hmac_key[KEY_SIZE];
 unsigned char current_nonce[NONCE_SIZE];
+char *mode_of_operation = "SERVER";
 
 SSL_CTX     *ssl_ctx;
 SSL         *ssl;
@@ -54,6 +55,7 @@ void server_exit(int exit_code) {
     }
 
     printf("SDFS Server exit.\n");
+    syslog (LOG_INFO, "INFO: SDFS Server exit.");
     exit(exit_code);
 
 }
@@ -227,7 +229,9 @@ int main (int argc, char *argv[]) {
 
     int result;
 
-    progname = argv[0];
+    progname = "sdfs-server";
+    openlog (progname, LOG_CONS | LOG_PID | LOG_NDELAY, LOG_LOCAL1);
+    syslog (LOG_INFO, "INFO: Program started by User %d", getuid ());
     printf("\n********************\n");
     printf("SDFS Server Launched\n");
     printf("********************\n");
@@ -265,5 +269,6 @@ int main (int argc, char *argv[]) {
 
     server_process_traffic();
 
+    closelog ();
     server_exit(0);
 }

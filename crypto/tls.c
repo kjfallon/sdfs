@@ -13,6 +13,7 @@ extern unsigned char session_encryption_key[KEY_SIZE];
 extern unsigned char session_hmac_key[IV_SIZE];
 extern unsigned char current_nonce[NONCE_SIZE];
 extern char *remote_hostname;
+extern char *mode_of_operation;
 
 /***************************************************************************
  * Create SSL context                                                      *
@@ -45,19 +46,23 @@ int initialize_tls( char *ca_cert, char *cert, char *priv_key, gboolean is_serve
     if (SSL_CTX_use_certificate_file(ssl_ctx, cert, SSL_FILETYPE_PEM) != 1) {
         has_valid_certs == FALSE;
         perror("TLS: Unable to load certificate");
+        syslog (LOG_ERR, "ERROR: TLS: Unable to load certificate");
     }
     // load private key
     if (SSL_CTX_use_PrivateKey_file (ssl_ctx, priv_key, SSL_FILETYPE_PEM) != 1) {
         has_valid_certs == FALSE;
         perror("TLS: Unable to load private key");
+        syslog (LOG_ERR, "ERROR: TLS: Unable to load private key");
     }
     // check if this is the private key for the pub key in the cert
     if (SSL_CTX_check_private_key(ssl_ctx) != 1) {
         has_valid_certs == FALSE;
         perror("TLS: Private key and cert mismatch");
+        syslog (LOG_ERR, "ERROR: Private key and cert mismatch");
     }
     else {
         printf("Loaded and validated this host's x509 certificate and key.\n");
+        syslog (LOG_INFO, "INFO: Loaded and validated this host's x509 certificate and key.");
     }
     return 0;
 
@@ -72,15 +77,18 @@ int accept_tls_connections() {
 
     if( !(ssl = SSL_new(ssl_ctx)) ) {
         perror("TLS: error create SSL object");
+        syslog (LOG_ERR, "ERROR: TLS: error create SSL object");
         return 1;
     }
     SSL_set_fd(ssl, tcp_net_fd);
     if( SSL_accept(ssl) < 0 )
     {
         perror("TLS: error during SSL_accept()");
+        syslog (LOG_ERR, "ERROR: TLS: error create SSL object");
         return 1;
     }
     printf("TLS: channel established using %s %s\n", SSL_get_cipher_version(ssl),SSL_get_cipher_name(ssl));
+    syslog (LOG_INFO, "INFO: TLS: channel established using %s %s", SSL_get_cipher_version(ssl),SSL_get_cipher_name(ssl));
 
     return 0;
 }
@@ -104,34 +112,44 @@ int write_message_to_tls(BufferObject *buffer, uint8_t message_type) {
     }
     switch (message_type) {
         case HELLO:
-            printf("TLS: wrote message HELLO %d bytes\n", (int)message.size );
+            printf("%s: wrote message HELLO %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message HELLO %d bytes", mode_of_operation, (int)message.size );
             break;
         case OK:
-            printf("TLS: wrote message OK %d bytes\n", (int)message.size );
+            printf("%s: wrote message OK %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message OK %d bytes", mode_of_operation, (int)message.size );
             break;
         case LOGIN:
-            printf("TLS: wrote message LOGIN %d bytes\n", (int)message.size );
+            printf("%s: wrote message LOGIN %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message LOGIN %d bytes", mode_of_operation, (int)message.size );
             break;
         case LOGOUT:
-            printf("TLS: wrote message LOGOUT %d bytes\n", (int)message.size );
+            printf("%s: wrote message LOGOUT %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message LOGOUT %d bytes", mode_of_operation, (int)message.size );
             break;
         case SET_PERM:
-            printf("TLS: wrote message SET_PERM %d bytes\n", (int)message.size );
+            printf("%s: wrote message SET_PERM %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message SET_PERM %d bytes", mode_of_operation, (int)message.size );
             break;
         case DELEGATE_PERM:
-            printf("TLS: wrote message DELEGATE_PERM %d bytes\n", (int)message.size );
+            printf("%s: wrote message DELEGATE_PERM %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message DELEGATE_PERM %d bytes", mode_of_operation, (int)message.size );
             break;
         case GET_FILE:
-            printf("TLS: wrote message GET_FILE %d bytes\n", (int)message.size );
+            printf("%s: wrote message GET_FILE %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message GET_FILE %d bytes", mode_of_operation, (int)message.size );
             break;
         case FILE_DATA:
-            printf("TLS: wrote message FILE_DATA %d bytes\n", (int)message.size );
+            printf("%s: wrote message FILE_DATA %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message FILE_DATA %d bytes", mode_of_operation, (int)message.size );
             break;
         case BAD_COMMAND:
-            printf("TLS: wrote message BAD_COMMAND %d bytes\n", (int)message.size );
+            printf("%s: wrote message BAD_COMMAND %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message BAD_COMMAND %d bytes", mode_of_operation, (int)message.size );
             break;
         case QUIT:
-            printf("TLS: wrote message QUIT %d bytes\n", (int)message.size );
+            printf("%s: wrote message QUIT %d bytes\n", mode_of_operation, (int)message.size );
+            syslog (LOG_INFO, "INFO: %s: wrote message QUIT %d bytes", mode_of_operation, (int)message.size );
             break;
 
     }
@@ -173,13 +191,16 @@ int read_from_tls(BufferObject *buffer) {
 
     switch (message_type) {
         case HELLO:
-            printf("TLS: received message HELLO\n");
+            printf("%s: received message HELLO\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message HELLO", mode_of_operation);
                    break;
         case OK:
-            printf("TLS: received message OK\n");
+            printf("%s: received message OK\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message OK", mode_of_operation);
             break;
         case LOGIN:
-            printf("TLS: received message LOGIN\n");
+            printf("%s: received message LOGIN\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message LOGIN", mode_of_operation);
             //process authentication
             result = validate_client_credentials(&message);
             // notify client of result
@@ -191,7 +212,8 @@ int read_from_tls(BufferObject *buffer) {
             }
             break;
         case LOGOUT:
-            printf("TLS: received message LOGOUT\n");
+            printf("%s: received message LOGOUT\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message LOGOUT", mode_of_operation);
             //process logout
             result = logout_authenticated_user(&message);
             // notify client of result
@@ -203,25 +225,31 @@ int read_from_tls(BufferObject *buffer) {
             }
             break;
         case SET_PERM:
-            printf("TLS: received message SET_PERM\n");
+            printf("%s: received message SET_PERM\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message SET_PERM", mode_of_operation);
             write_message_to_tls(&reply, NOT_IMPLEMENTED);
             break;
         case DELEGATE_PERM:
-            printf("TLS: received message DELEGATE_PERM\n");
+            printf("%s: received message DELEGATE_PERM\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message DELEGATE_PERM", mode_of_operation);
             write_message_to_tls(&reply, NOT_IMPLEMENTED);
             break;
         case GET_FILE:
-            printf("TLS: received message GET_FILE\n");
+            printf("%s: received message GET_FILE\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message GET_FILE", mode_of_operation);
             write_message_to_tls(&reply, NOT_IMPLEMENTED);
             break;
         case BAD_COMMAND:
-            printf("TLS: received message BAD_COMMAND\n");
+            printf("%s: received message BAD_COMMAND\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message BAD_COMMAND", mode_of_operation);
             break;
         case NOT_IMPLEMENTED:
-            printf("TLS: received message NOT_IMPLEMENTED\n");
+            printf("%s: received message NOT_IMPLEMENTED\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message NOT_IMPLEMENTED", mode_of_operation);
             break;
         case QUIT:
-            printf("TLS: received message QUIT\n");
+            printf("%s: received message QUIT\n", mode_of_operation);
+            syslog (LOG_INFO, "INFO: %s: received message QUIT", mode_of_operation);
             return 1;
 
     }
@@ -245,6 +273,7 @@ int write_bytes_to_tls(BufferObject *buffer) {
     }
 
     printf( "TLS: wrote %d bytes\n", (int)buffer->size );
+    syslog (LOG_INFO, "INFO: TLS: wrote %d bytes", (int)buffer->size );
     hexPrint(buffer->data, buffer->size);
 
     return 0;
@@ -260,6 +289,7 @@ int connect_to_tls() {
 
     if( !(ssl = SSL_new(ssl_ctx)) ) {
         perror("TLS: error create SSL object");
+        syslog (LOG_ERR, "ERROR: TLS: error create SSL object");
         return 1;
     }
 
@@ -267,6 +297,7 @@ int connect_to_tls() {
     if( SSL_connect(ssl) < 0 )
     {
         perror("TLS: error during SSL_connect()");
+        syslog (LOG_ERR, "ERROR: TLS: error during SSL connect()");
         return 1;
     }
 
@@ -279,15 +310,20 @@ int connect_to_tls() {
         matched = match_hostname(cert_subject_cn, remote_hostname);
         if (! matched) {
             g_warning("TLS: server CN '%s' does not match host name '%s\n'", cert_subject_cn, remote_hostname);
+            syslog (LOG_ERR, "ERROR: TLS:  server CN '%s' does not match host name '%s'", cert_subject_cn, remote_hostname);
             return 1;
         }
     } else {
         g_warning("TLS: server certificate missing common name\n");
+        syslog (LOG_ERR, "ERROR: TLS: server certificate missing common name");
+
         return 1;
     }
 
     printf("TLS: channel established using %s %s\n", SSL_get_cipher_version(ssl),SSL_get_cipher_name(ssl));
+    syslog (LOG_INFO, "INFO: TLS: channel established using %s %s\n", SSL_get_cipher_version(ssl),SSL_get_cipher_name(ssl));
     printf("TLS: SERVER AUTH OK, server DNS hostname (%s) matches cert CN (%s)\n", remote_hostname, cert_subject_cn);
+    syslog (LOG_INFO, "INFO: TLS: SERVER AUTH OK, server DNS hostname (%s) matches cert CN (%s)\n", remote_hostname, cert_subject_cn);
 
     return 0;
 }
@@ -315,11 +351,13 @@ int validate_client_credentials(BufferObject *message) {
 
     memcpy(&username[0],&message->data[0], username_length);
     username[username_length] = '\0';
-    printf("TLS: received client auth username: %s\n", username);
+    printf("SERVER: received client auth username: %s\n", username);
+    syslog (LOG_INFO, "INFO: SERVER: received client auth username");
 
     memcpy(&password[0],&message->data[username_length + 1], password_length);
     password[password_length] = '\0';
-    printf("TLS: received client auth password: %s\n", password);
+    printf("SERVER: received client auth password: %s\n", password);
+    syslog (LOG_INFO, "INFO: SERVER: received client auth password");
 
     // pull shadow password for the user from the system
     struct spwd *shadow_password;
@@ -332,16 +370,19 @@ int validate_client_credentials(BufferObject *message) {
     //printf("TLS: hash: %s\n", password_hash);
 
     if( strcmp(password_hash, shadow_password->sp_pwdp) == 0 ) {
-        printf("TLS: CLIENT AUTH OK, client credentials match local OS user\n");
+        printf("SERVER: CLIENT AUTH OK, client credentials match local OS user\n");
+        syslog (LOG_INFO, "INFO: SERVER: CLIENT AUTH OK, client credentials match local OS user");
         if (strcmp(username, "userA") == 0) {
             userA_authenticated = TRUE;
+            syslog (LOG_INFO, "INFO: SERVER: userA logged in");
         }
         else if (strcmp(username, "userB") == 0) {
             userB_authenticated = TRUE;
+            syslog (LOG_INFO, "INFO: SERVER: userB logged in");
         }
     }
     else {
-        printf("TLS: client auth failed\n");
+        printf("SERVER: client auth failed\n");
         return 1;
     }
 
@@ -360,18 +401,22 @@ int logout_authenticated_user(BufferObject *message) {
 
     memcpy(&username[0],&message->data[0], username_length);
     username[username_length] = '\0';
-    printf("TLS: received logout request for username: %s\n", username);
+    printf("SERVER: received logout request for username: %s\n", username);
+    syslog (LOG_INFO, "INFO: SERVER: received logout request for username: %s\n", username);
 
     if ((strcmp(username, "userA") == 0) && (userA_authenticated == TRUE) )  {
         userA_authenticated == FALSE;
-        printf("TLS: user logged out\n");
+        printf("SERVER: userA logged out\n");
+        syslog (LOG_INFO, "INFO: SERVER: userA logged out");
     }
     else if ((strcmp(username, "userB") == 0) && (userB_authenticated = TRUE) ) {
         userB_authenticated == FALSE;
-        printf("TLS: user logged out\n");
+        printf("TLS: userB logged out\n");
+        syslog (LOG_INFO, "INFO: SERVER: userB logged out");
     }
     else {
         printf("TLS: Either invalid user or not logged in\n");
+        syslog (LOG_ERR, "INFO: SERVER: Either invalid user or not logged in");
         return 1;
     }
 
