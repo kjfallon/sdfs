@@ -40,25 +40,35 @@ int initialize_tls( char *ca_cert, char *cert, char *priv_key, gboolean is_serve
 
 
     SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
-    SSL_CTX_load_verify_locations(ssl_ctx, ca_cert, NULL);
+
+    // load CA signing certificate
+    if (SSL_CTX_load_verify_locations(ssl_ctx, ca_cert, NULL) != 1) {
+        has_valid_certs == FALSE;
+        perror("TLS: Unable to load CA certificate");
+        syslog (LOG_ERR, "ERROR: TLS: Unable to load CA certificate");
+        return 1;
+    }
 
     // load certificate
     if (SSL_CTX_use_certificate_file(ssl_ctx, cert, SSL_FILETYPE_PEM) != 1) {
         has_valid_certs == FALSE;
         perror("TLS: Unable to load certificate");
         syslog (LOG_ERR, "ERROR: TLS: Unable to load certificate");
+        return 1;
     }
     // load private key
     if (SSL_CTX_use_PrivateKey_file (ssl_ctx, priv_key, SSL_FILETYPE_PEM) != 1) {
         has_valid_certs == FALSE;
         perror("TLS: Unable to load private key");
         syslog (LOG_ERR, "ERROR: TLS: Unable to load private key");
+        return 1;
     }
     // check if this is the private key for the pub key in the cert
     if (SSL_CTX_check_private_key(ssl_ctx) != 1) {
         has_valid_certs == FALSE;
         perror("TLS: Private key and cert mismatch");
         syslog (LOG_ERR, "ERROR: Private key and cert mismatch");
+        return 1;
     }
     else {
         printf("Loaded and validated this host's x509 certificate and key.\n");
@@ -301,11 +311,31 @@ int connect_to_tls() {
         return 1;
     }
 
-    // verify that the certificate CN matches the CN of the hostname we are connecting to
-    gboolean matched = FALSE;
     X509 *server_cert = SSL_get_peer_certificate(ssl);
+    // Did we get a server cert?
+    if (server_cert == NULL) {
+        // missing server cert
+        syslog (LOG_ERR, "ERROR: TLS: server certificate missing");
+        return 1;
+    }
+
     char *cert_subject_cn;
     cert_subject_cn = tls_text_name(X509_get_subject_name(server_cert), NID_commonName);
+
+    // Verify the signature of the server cert
+     int v_result = SSL_get_verify_result(ssl);
+        if (v_result == X509_V_OK) {
+            // server cert signature is correct
+            syslog (LOG_INFO, "INFO: TLS: server certificate was signed by a trusted CA");
+        } else {
+            // server cert signature is not correct
+            syslog (LOG_ERR, "ERROR: TLS: server certificate was NOT signed by a trusted CA");
+            g_warning("TLS: server cert '%s' was not signed by a trusted CA\n", cert_subject_cn);
+            return 1;
+        }
+
+    // verify that the server cert CN matches the CN of the hostname the client specified
+    gboolean matched = FALSE;
     if (cert_subject_cn && *cert_subject_cn) {
         matched = match_hostname(cert_subject_cn, remote_hostname);
         if (! matched) {
