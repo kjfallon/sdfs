@@ -73,24 +73,24 @@ TLS: read 2 bytes from channel: 027f
 CLIENT: received message OK
 file_permission_set("userA");
 CLIENT: wrote message SET_PERM 6 bytes
-TLS: read 2 bytes from channel: 0b7f
-CLIENT: received message NOT_IMPLEMENTED
+TLS: read 2 bytes from channel: 027f
+CLIENT: received message OK
 file_access("userA"); //success
 CLIENT: wrote message GET_FILE 6 bytes
-TLS: read 2 bytes from channel: 0b7f
-CLIENT: received message NOT_IMPLEMENTED
+TLS: read 2 bytes from channel: 027f
+CLIENT: received message OK
 file_access("userB"); //failure
 CLIENT: wrote message GET_FILE 6 bytes
-TLS: read 2 bytes from channel: 0b7f
-CLIENT: received message NOT_IMPLEMENTED
+TLS: read 2 bytes from channel: 0a7f
+CLIENT: received message BAD_COMMAND
 file_delegate("userA", "userB");
 CLIENT: wrote message DELEGATE_PERM 12 bytes
-TLS: read 2 bytes from channel: 0b7f
-CLIENT: received message NOT_IMPLEMENTED
+TLS: read 2 bytes from channel: 027f
+CLIENT: received message OK
 file_access("userB"); //success
 CLIENT: wrote message GET_FILE 6 bytes
-TLS: read 2 bytes from channel: 0b7f
-CLIENT: received message NOT_IMPLEMENTED
+TLS: read 2 bytes from channel: 027f
+CLIENT: received message OK
 user_logout("userA");
 CLIENT: wrote message LOGOUT 6 bytes
 TLS: read 2 bytes from channel: 027f
@@ -100,6 +100,8 @@ CLIENT: wrote message LOGOUT 6 bytes
 TLS: read 2 bytes from channel: 027f
 CLIENT: received message OK
 ^C
+ Resetting file permissions...
+
 Erasing keys...
 TLS: closed
 SDFS Client exit.
@@ -108,6 +110,7 @@ $
 
 # Server Execution Example
 ```
+Note: Server process accesses the shadow password database and must run as root.
 # ./sdfs-server
 
 ********************
@@ -145,14 +148,28 @@ SERVER: CLIENT AUTH OK, client credentials match local OS user
 SERVER: wrote message OK 2 bytes
 TLS: read 6 bytes from channel: 067573657241
 SERVER: received message SET_PERM
+SERVER: userA given read permission for fileX 
+SERVER: wrote message OK 2 bytes
 TLS: read 6 bytes from channel: 087573657241
 SERVER: received message GET_FILE
+SERVER: userA requests read permission for fileX 
+User has permission to read
+SERVER: wrote message OK 2 bytes
 TLS: read 6 bytes from channel: 087573657242
 SERVER: received message GET_FILE
+SERVER: userB requests read permission for fileX 
+TLS: User does not have permission to read
+SERVER: wrote message BAD_COMMAND 2 bytes
 TLS: read 12 bytes from channel: 0775736572417f7573657242
 SERVER: received message DELEGATE_PERM
+SERVER: received delegate command from username: userA
+SERVER: received delegate command to username: userB
+SERVER: wrote message OK 2 bytes
 TLS: read 6 bytes from channel: 087573657242
 SERVER: received message GET_FILE
+SERVER: userB requests read permission for fileX 
+User has permission to read
+SERVER: wrote message OK 2 bytes
 TLS: read 6 bytes from channel: 057573657241
 SERVER: received message LOGOUT
 SERVER: received logout request for username: userA
