@@ -24,6 +24,8 @@ unsigned char cbc_iv[IV_SIZE];
 unsigned char session_hmac_key[KEY_SIZE];
 unsigned char current_nonce[NONCE_SIZE];
 char *mode_of_operation = "CLIENT";
+GList* file_owner_list = NULL;
+GList* file_read_access_list = NULL;
 
 SSL_CTX     *ssl_ctx;
 SSL         *ssl;
@@ -409,11 +411,11 @@ int main (int argc, char *argv[]) {
     file_permission_set("userA");
     process_traffic(1);
 
-    printf("file_access(\"userA\"); //success\n");
+    printf("file_access(\"userA\");\n");
     file_access("userA");
     process_traffic(1);
 
-    printf("file_access(\"userB\"); //failure\n");
+    printf("file_access(\"userB\");\n");
     file_access("userB");
     process_traffic(1);
 
@@ -421,7 +423,7 @@ int main (int argc, char *argv[]) {
     file_delegate("userA", "userB");
     process_traffic(1);
 
-    printf("file_access(\"userB\"); //success\n");
+    printf("file_access(\"userB\");\n");
     file_access("userB");
     process_traffic(1);
 

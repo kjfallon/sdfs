@@ -21,6 +21,8 @@ unsigned char cbc_iv[IV_SIZE];
 unsigned char session_hmac_key[KEY_SIZE];
 unsigned char current_nonce[NONCE_SIZE];
 char *mode_of_operation = "SERVER";
+GList* file_owner_list = NULL;
+GList* file_read_access_list = NULL;
 
 SSL_CTX     *ssl_ctx;
 SSL         *ssl;

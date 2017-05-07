@@ -14,6 +14,8 @@ extern unsigned char session_hmac_key[IV_SIZE];
 extern unsigned char current_nonce[NONCE_SIZE];
 extern char *remote_hostname;
 extern char *mode_of_operation;
+extern GList* file_owner_list;
+extern GList* file_read_access_list;
 
 /***************************************************************************
  * Create SSL context                                                      *
@@ -203,7 +205,7 @@ int read_from_tls(BufferObject *buffer) {
         case HELLO:
             printf("%s: received message HELLO\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message HELLO", mode_of_operation);
-                   break;
+            break;
         case OK:
             printf("%s: received message OK\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message OK", mode_of_operation);
@@ -237,17 +239,38 @@ int read_from_tls(BufferObject *buffer) {
         case SET_PERM:
             printf("%s: received message SET_PERM\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message SET_PERM", mode_of_operation);
-            write_message_to_tls(&reply, NOT_IMPLEMENTED);
+            result = file_permission_set_owner(&message);
+            // notify client of result
+            if (result == 0) {
+                write_message_to_tls(&reply, OK);
+            }
+            else {
+                write_message_to_tls(&reply, BAD_COMMAND);
+            }
             break;
         case DELEGATE_PERM:
             printf("%s: received message DELEGATE_PERM\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message DELEGATE_PERM", mode_of_operation);
-            write_message_to_tls(&reply, NOT_IMPLEMENTED);
+            result = file_delegate_permission_server(&message);
+            // notify client of result
+            if (result == 0) {
+                write_message_to_tls(&reply, OK);
+            }
+            else {
+                write_message_to_tls(&reply, BAD_COMMAND);
+            }
             break;
         case GET_FILE:
             printf("%s: received message GET_FILE\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message GET_FILE", mode_of_operation);
-            write_message_to_tls(&reply, NOT_IMPLEMENTED);
+            result = get_file_from_server(&message);
+            // notify client of result
+            if (result == 0) {
+                write_message_to_tls(&reply, OK);
+            }
+            else {
+                write_message_to_tls(&reply, BAD_COMMAND);
+            }
             break;
         case BAD_COMMAND:
             printf("%s: received message BAD_COMMAND\n", mode_of_operation);
@@ -323,16 +346,16 @@ int connect_to_tls() {
     cert_subject_cn = tls_text_name(X509_get_subject_name(server_cert), NID_commonName);
 
     // Verify the signature of the server cert
-     int v_result = SSL_get_verify_result(ssl);
-        if (v_result == X509_V_OK) {
-            // server cert signature is correct
-            syslog (LOG_INFO, "INFO: TLS: server certificate was signed by a trusted CA");
-        } else {
-            // server cert signature is not correct
-            syslog (LOG_ERR, "ERROR: TLS: server certificate was NOT signed by a trusted CA");
-            g_warning("TLS: server cert '%s' was not signed by a trusted CA\n", cert_subject_cn);
-            return 1;
-        }
+    int v_result = SSL_get_verify_result(ssl);
+    if (v_result == X509_V_OK) {
+        // server cert signature is correct
+        syslog (LOG_INFO, "INFO: TLS: server certificate was signed by a trusted CA");
+    } else {
+        // server cert signature is not correct
+        syslog (LOG_ERR, "ERROR: TLS: server certificate was NOT signed by a trusted CA");
+        g_warning("TLS: server cert '%s' was not signed by a trusted CA\n", cert_subject_cn);
+        return 1;
+    }
 
     // verify that the server cert CN matches the CN of the hostname the client specified
     gboolean matched = FALSE;
@@ -432,7 +455,7 @@ int logout_authenticated_user(BufferObject *message) {
     memcpy(&username[0],&message->data[0], username_length);
     username[username_length] = '\0';
     printf("SERVER: received logout request for username: %s\n", username);
-    syslog (LOG_INFO, "INFO: SERVER: received logout request for username: %s\n", username);
+    syslog (LOG_INFO, "INFO: SERVER: received logout request for username: %s", username);
 
     if ((strcmp(username, "userA") == 0) && (userA_authenticated == TRUE) )  {
         userA_authenticated == FALSE;
@@ -441,14 +464,228 @@ int logout_authenticated_user(BufferObject *message) {
     }
     else if ((strcmp(username, "userB") == 0) && (userB_authenticated = TRUE) ) {
         userB_authenticated == FALSE;
-        printf("TLS: userB logged out\n");
+        printf("SEVER: userB logged out\n");
         syslog (LOG_INFO, "INFO: SERVER: userB logged out");
     }
     else {
-        printf("TLS: Either invalid user or not logged in\n");
+        printf("SERVER: Either invalid user or not logged in\n");
         syslog (LOG_ERR, "INFO: SERVER: Either invalid user or not logged in");
         return 1;
     }
 
     return 0;
+}
+
+/***************************************************************************
+ * Add file ownership to a user                                            *
+ *                                                                         *
+ ***************************************************************************/
+int file_permission_set_owner(BufferObject *message) {
+
+    /* extract username from payload */
+    int username_length = message->size;
+    char username[username_length + 1];
+
+    memcpy(&username[0], &message->data[0], username_length);
+    username[username_length] = '\0';
+    printf("SERVER: received file_permission_set for username: %s\n", username);
+    syslog(LOG_INFO, "INFO: SERVER: received file_permission_set for username: %s", username);
+
+    // verify a valid user has authenticated
+    if (!userA_authenticated && !userB_authenticated) {
+        printf("SERVER: error could not add %s as owner due to no valid users are logged in\n", username);
+        syslog(LOG_ERR, "INFO: SERVER: error could not add %s as owner due to no valid users are logged in", username);
+        return 1;
+    }
+    gboolean ok_to_add_owner = FALSE;
+    if (g_list_length(file_owner_list) == 0) {
+        // There are no current owners of the file so anyone can add.
+        ok_to_add_owner = TRUE;
+    }
+    else {
+        // the file is owned so verify an owner is logged in
+        int nIndex;
+        GList *node;
+
+        for (nIndex = 0; node = g_list_nth(file_owner_list, nIndex); nIndex++) {
+
+            if ((strcmp((char *) node->data, "userA") == 0) && userA_authenticated) {
+                ok_to_add_owner = TRUE;
+            }
+            if ((strcmp((char *) node->data, "userB") == 0) && userB_authenticated) {
+                ok_to_add_owner = TRUE;
+            }
+        }
+    }
+    if (ok_to_add_owner == FALSE) {
+        printf("SERVER: error not allowed to set owner\n", username);
+        syslog (LOG_ERR, "INFO: SERVER: error not allowed to set owner", username);
+        return 1;
+    }
+
+    // Add user to list of owners
+    file_owner_list = g_list_append (file_owner_list, username);
+
+    // Verify user was added
+    GList* user;
+    user = g_list_find (file_owner_list, username);
+    if (user) {
+        printf("SERVER: added %s as file owner\n", username);
+        syslog (LOG_INFO, "INFO: SERVER: added %s as file owner", username);
+    } else {
+        printf("SERVER: error could not add %s as owner\n", username);
+        syslog (LOG_ERR, "INFO: SERVER: error could not add %s as owner", username);
+        return 1;
+    }
+
+    return 0;
+}
+
+/***************************************************************************
+ * Apply permissions to get file from server                               *
+ *                                                                         *
+ ***************************************************************************/
+int get_file_from_server(BufferObject *message) {
+
+    /* extract username from payload */
+    int username_length = message->size;
+    char username[username_length + 1];
+
+    memcpy(&username[0], &message->data[0], username_length);
+    username[username_length] = '\0';
+    printf("SERVER: received file access for username: %s\n", username);
+    syslog(LOG_INFO, "INFO: SERVER: received file access for username: %s", username);
+
+    // verify a valid user has authenticated
+    if (!userA_authenticated && !userB_authenticated) {
+        printf("SERVER: error could not file access due to no valid users are logged in\n");
+        syslog(LOG_ERR, "INFO: SERVER: error could not file access as owner due to no valid users are logged in");
+        return 1;
+    }
+    gboolean ok_to_access_file = FALSE;
+    if (g_list_length(file_owner_list) == 0) {
+        // There are no current owners of the file so anyone can access.
+        ok_to_access_file = TRUE;
+    }
+    else {
+        // the file is owned so verify an owner is logged in
+        // Check if user is an owner of this file
+        GList* user;
+        user = g_list_find (file_owner_list, username);
+        if (user) {
+            ok_to_access_file = TRUE;
+            printf("SERVER: %s is a file owner\n", username);
+        }
+    }
+
+    // check if access has been delegated to this file.
+    if (g_list_length(file_read_access_list) == 0) {
+        // No one has been delegated access.
+
+    }
+    else {
+        // see if this user is an delegatee
+        GList* user;
+        user = g_list_find (file_read_access_list, username);
+        if (user) {
+            ok_to_access_file = TRUE;
+            printf("SERVER: %s was delegated access\n", username);
+        }
+    }
+
+    if (ok_to_access_file == FALSE) {
+        printf("SERVER: file access was rejected for %s\n", username);
+        syslog (LOG_ERR, "INFO: SERVER: file access was rejected for %s", username);
+        return 1;
+    }
+
+    // Access file
+    // Not required to actually read a file per instructions in class
+    // return that file access was successful
+    printf("SERVER: file access was successful for %s\n", username);
+    syslog (LOG_INFO, "INFO: SERVER: added %s as file owner", username);
+
+    return 0;
+}
+
+/***************************************************************************
+ * Delegate permissions                                                    *
+ *                                                                         *
+ ***************************************************************************/
+int file_delegate_permission_server(BufferObject *message) {
+
+    /* extract usernames from payload */
+    int i;
+    int delim_location;
+    for (i = 0; message->data[i]; ++i)
+        if (message->data[i] == CHAR_DELIM) {
+            delim_location = i;
+            break;
+        }
+
+    int username1_length = delim_location;
+    int username2_length = (message->size - delim_location) - 1;
+    char username1[username1_length + 1];
+    char username2[username2_length + 1];
+
+    memcpy(&username1[0], &message->data[0], username1_length);
+    username1[username1_length] = '\0';
+    printf("SERVER: received delegator: %s\n", username1);
+    syslog(LOG_INFO, "INFO: SERVER: received delegator: %s", username1);
+
+    memcpy(&username2[0], &message->data[username1_length + 1], username2_length);
+    username2[username2_length] = '\0';
+    printf("SERVER: received delegatee: %s\n", username2);
+    syslog(LOG_INFO, "INFO: SERVER: received delegatee %s", username2);
+
+    // verify a valid user has authenticated
+    if (!userA_authenticated && !userB_authenticated) {
+        printf("SERVER: error could not delegate due to no valid users are logged in\n");
+        syslog(LOG_ERR, "INFO: SERVER: error could not delegate as owner due to no valid users are logged in");
+        return 1;
+    }
+    gboolean ok_to_add_delegate = FALSE;
+    if (g_list_length(file_owner_list) == 0) {
+        // There are no current owners of the file so no one can delegate
+        printf("SERVER: file has no owners cannot delegate\n");
+        syslog(LOG_ERR, "INFO: SERVER: file has no owners cannot delegate");
+        return 1;
+    } else {
+
+        // the file is owned so verify user1 is an owner who is logged in
+        GList* user;
+        user = g_list_find (file_owner_list, username1);
+        if (user) {
+            if ( (strcmp(username1, "userA") == 0) && (userA_authenticated == TRUE) ) {
+                ok_to_add_delegate = TRUE;
+                printf("SERVER: userA is logged in, is an owner, and is delegating access\n");
+            }
+            if ( (strcmp(username1, "userB") == 0) && (userB_authenticated == TRUE) ) {
+                ok_to_add_delegate = TRUE;
+                printf("SERVER: userB is logged in, is an owner, and is delegating access\n");
+            }
+        }
+    }
+    if (ok_to_add_delegate == FALSE) {
+        printf("SERVER: error not allowed to delegate\n");
+        syslog(LOG_ERR, "INFO: SERVER: error not allowed to delegate");
+        return 1;
+    } else {
+        // Add user to list of owners
+        file_read_access_list = g_list_append(file_read_access_list, username2);
+
+        // Verify user was added
+        GList *user;
+        user = g_list_find(file_read_access_list, username2);
+        if (user) {
+            printf("SERVER: delegated permissions to %s\n", username2);
+            syslog(LOG_INFO, "INFO: SERVER: delegated permissions to %s", username2);
+        } else {
+            printf("SERVER: error delegating permissions\n");
+            syslog(LOG_ERR, "INFO: SERVER: error delegating permissions");
+            return 1;
+        }
+
+        return 0;
+    }
 }
