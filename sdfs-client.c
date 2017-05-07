@@ -34,6 +34,13 @@ SSL         *ssl;
 void client_exit(int exit_code) {
 
     exit_requested =TRUE;
+    //reset file permissions
+    printf("\n Resetting file permissions...\n");
+    FILE *fp;
+    fp = fopen("/home/ubuntu/cis600/sdfs/file/file-permission.txt","w");
+    fputs("fileX",fp);
+    fclose(fp);
+
     // erase keys
     printf("\nErasing keys...\n");
     memset(session_encryption_key, '0', KEY_SIZE);

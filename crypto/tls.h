@@ -28,5 +28,7 @@ int write_bytes_to_tls(BufferObject *buffer);
 int read_from_tls(BufferObject *buffer);
 int validate_client_credentials(BufferObject *message);
 int logout_authenticated_user(BufferObject *message); 
-
+int set_read_permission(BufferObject *message);
+int delegate_read_permission(BufferObject *message);
+int request_read_permission(BufferObject *message);
 #endif //SDFS_TLS_H

@@ -237,17 +237,35 @@ int read_from_tls(BufferObject *buffer) {
         case SET_PERM:
             printf("%s: received message SET_PERM\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message SET_PERM", mode_of_operation);
-            write_message_to_tls(&reply, NOT_IMPLEMENTED);
+            result = set_read_permission(&message);
+            if (result == 0) {
+                write_message_to_tls(&reply, OK);
+            }
+            else {
+                write_message_to_tls(&reply, BAD_COMMAND);
+            }
             break;
         case DELEGATE_PERM:
             printf("%s: received message DELEGATE_PERM\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message DELEGATE_PERM", mode_of_operation);
-            write_message_to_tls(&reply, NOT_IMPLEMENTED);
+            result = delegate_read_permission(&message);
+            if (result == 0) {
+                write_message_to_tls(&reply, OK);
+            }
+            else {
+                write_message_to_tls(&reply, BAD_COMMAND);
+            }
             break;
         case GET_FILE:
             printf("%s: received message GET_FILE\n", mode_of_operation);
             syslog (LOG_INFO, "INFO: %s: received message GET_FILE", mode_of_operation);
-            write_message_to_tls(&reply, NOT_IMPLEMENTED);
+            result = request_read_permission(&message);
+            if (result == 0) {
+                write_message_to_tls(&reply, OK);
+            }
+            else {
+                write_message_to_tls(&reply, BAD_COMMAND);
+            }
             break;
         case BAD_COMMAND:
             printf("%s: received message BAD_COMMAND\n", mode_of_operation);
@@ -452,3 +470,120 @@ int logout_authenticated_user(BufferObject *message) {
 
     return 0;
 }
+/***************************************************************************
+ * Set read permission to a user                                           *
+ *                                                                         *
+ ***************************************************************************/
+int set_read_permission(BufferObject *message) {
+
+    /* extract message from payload */
+    int username_length = message->size;
+    char username[username_length + 1];
+
+    memcpy(&username[0],&message->data[0], username_length);
+    username[username_length] = '\0';
+    printf("SERVER: %s given read permission for fileX \n", username);
+    syslog (LOG_INFO, "INFO: SERVER: User %s given read permission for fileX\n", username);
+
+    if ((strcmp(username, "userA") == 0) && (userA_authenticated == TRUE) ) {
+        FILE *fp;
+        char tmp[50];
+        fp = fopen("/home/ubuntu/cis600/sdfs/file/file-permission.txt","r");
+        fscanf(fp, "%s", tmp);
+        fclose(fp);
+        if( strstr(tmp,username) == NULL) {
+            char *tmp1 = strcat(tmp,":");
+            strcat(tmp1,username);
+            fp = fopen("/home/ubuntu/cis600/sdfs/file/file-permission.txt","w");
+            fputs(tmp1,fp);
+            fclose(fp);
+        }
+    }
+
+    return 0;
+}
+
+/***************************************************************************
+ * Delegate read permission to a user                                      *
+ *                                                                         *
+ ***************************************************************************/
+int delegate_read_permission(BufferObject *message) {
+
+    /* extract username and password from payload */
+    int i;
+    int delim_location;
+    for( i=0; message->data[i]; ++i )
+        if( message->data[i] == CHAR_DELIM )
+        {
+            delim_location = i;
+            break;
+        }
+
+    int username1_length = delim_location;
+    int username2_length = (message->size - delim_location) - 1;
+    char username1[username1_length + 1];
+    char username2[username2_length + 1];
+
+    memcpy(&username1[0],&message->data[0], username1_length);
+    username1[username1_length] = '\0';
+    printf("SERVER: received delegate command from username: %s\n", username1);
+    syslog (LOG_INFO, "INFO: SERVER: received delegate command from username");
+
+    memcpy(&username2[0],&message->data[username1_length + 1], username2_length);
+    username2[username2_length] = '\0';
+    printf("SERVER: received delegate command to username: %s\n", username2);
+    syslog (LOG_INFO, "INFO: SERVER: received delegate command to username");
+
+    if ((strcmp(username1, "userA") == 0) && (userA_authenticated == TRUE) )  {
+        FILE *fp;
+        char tmp[50];
+        fp = fopen("/home/ubuntu/cis600/sdfs/file/file-permission.txt","r");
+        fscanf(fp, "%s", tmp);
+        fclose(fp);
+        if( strstr(tmp,username2) == NULL) {
+            char *tmp1 = strcat(tmp,":");
+            strcat(tmp1,username2);
+            fp = fopen("/home/ubuntu/cis600/sdfs/file/file-permission.txt","w");
+            fputs(tmp1,fp);
+            fclose(fp);
+        }
+    }
+
+    return 0;
+}
+
+
+/***************************************************************************
+ * Request read permission by a user                                       *
+ *                                                                         *
+ ***************************************************************************/
+int request_read_permission(BufferObject *message) {
+
+    /* extract message from payload */
+    int username_length = message->size;
+    char username[username_length + 1];
+    int i;
+
+    memcpy(&username[0],&message->data[0], username_length);
+    username[username_length] = '\0';
+    printf("SERVER: %s requests read permission for fileX \n", username);
+    syslog (LOG_INFO, "INFO: SERVER: User %s given read permission for fileX\n", username);
+
+    if (((strcmp(username, "userA") == 0) && (userA_authenticated == TRUE) ) || ((strcmp(username, "userB") == 0) && (userB_authenticated == TRUE))) {
+        FILE *fp;
+        char tmp[50];
+        fp = fopen("/home/ubuntu/cis600/sdfs/file/file-permission.txt","r");
+        fscanf(fp, "%s", tmp);
+        fclose(fp);
+        if( strstr(tmp,username) != NULL)
+            printf("User has permission to read\n");
+        else {
+            printf("TLS: User does not have permission to read\n");
+            syslog (LOG_ERR, "INFO: SERVER: User does not have permission to read\n");
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
